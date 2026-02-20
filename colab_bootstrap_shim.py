@@ -58,31 +58,71 @@ BOOT_BRANCH = str(os.environ.get("OUROBOROS_BOOT_BRANCH", "ouroboros"))
 REPO_DIR = pathlib.Path("/content/ouroboros_repo").resolve()
 REMOTE_URL = f"https://{GITHUB_TOKEN}:x-oauth-basic@github.com/{GITHUB_USER}/{GITHUB_REPO}.git"
 
-if not (REPO_DIR / ".git").exists():
-    subprocess.run(["rm", "-rf", str(REPO_DIR)], check=False)
-    subprocess.run(["git", "clone", REMOTE_URL, str(REPO_DIR)], check=True)
+
+def _current_branch(cwd: str) -> str:
+    r = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=cwd, capture_output=True, text=True,
+    )
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+_repo_existed = (REPO_DIR / ".git").exists()
+
+if _repo_existed and _current_branch(str(REPO_DIR)) == BOOT_BRANCH:
+    # --- HOT RESTART (re-run cell, runtime alive) ---
+    # Repo exists and already on the right branch. Don't touch git —
+    # the agent may have uncommitted local changes. Just refresh the
+    # remote URL (token may have rotated) and go straight to launcher.
+    subprocess.run(
+        ["git", "remote", "set-url", "origin", REMOTE_URL],
+        cwd=str(REPO_DIR), check=False,
+    )
+    print(f"[boot] hot restart — repo intact on {BOOT_BRANCH}, skipping git ops")
 else:
-    subprocess.run(["git", "remote", "set-url", "origin", REMOTE_URL], cwd=str(REPO_DIR), check=True)
+    # --- COLD START (runtime restarted / first run / wrong branch) ---
+    if not _repo_existed:
+        subprocess.run(["rm", "-rf", str(REPO_DIR)], check=False)
+        subprocess.run(["git", "clone", REMOTE_URL, str(REPO_DIR)], check=True)
+    else:
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", REMOTE_URL],
+            cwd=str(REPO_DIR), check=True,
+        )
 
-subprocess.run(["git", "fetch", "origin"], cwd=str(REPO_DIR), check=True)
+    subprocess.run(["git", "fetch", "origin"], cwd=str(REPO_DIR), check=True)
 
-# Check if BOOT_BRANCH exists on the fork's remote.
-# New forks (from the main-only public repo) won't have it yet.
-_rc = subprocess.run(
-    ["git", "rev-parse", "--verify", f"origin/{BOOT_BRANCH}"],
-    cwd=str(REPO_DIR), capture_output=True,
-).returncode
+    _rc = subprocess.run(
+        ["git", "rev-parse", "--verify", f"origin/{BOOT_BRANCH}"],
+        cwd=str(REPO_DIR), capture_output=True,
+    ).returncode
 
-if _rc == 0:
-    subprocess.run(["git", "checkout", BOOT_BRANCH], cwd=str(REPO_DIR), check=True)
-    subprocess.run(["git", "reset", "--hard", f"origin/{BOOT_BRANCH}"], cwd=str(REPO_DIR), check=True)
-else:
-    print(f"[boot] branch {BOOT_BRANCH} not found on fork — creating from origin/main")
-    subprocess.run(["git", "checkout", "-b", BOOT_BRANCH, "origin/main"], cwd=str(REPO_DIR), check=True)
-    subprocess.run(["git", "push", "-u", "origin", BOOT_BRANCH], cwd=str(REPO_DIR), check=True)
-    _STABLE = f"{BOOT_BRANCH}-stable"
-    subprocess.run(["git", "branch", _STABLE], cwd=str(REPO_DIR), check=True)
-    subprocess.run(["git", "push", "-u", "origin", _STABLE], cwd=str(REPO_DIR), check=True)
+    if _rc == 0:
+        # Branch exists on remote — checkout (force to handle untracked conflicts)
+        subprocess.run(
+            ["git", "checkout", "-f", BOOT_BRANCH],
+            cwd=str(REPO_DIR), check=False,
+        )
+        subprocess.run(
+            ["git", "checkout", "-B", BOOT_BRANCH, f"origin/{BOOT_BRANCH}"],
+            cwd=str(REPO_DIR), check=True,
+        )
+    else:
+        print(f"[boot] branch {BOOT_BRANCH} not found on fork — creating from origin/main")
+        subprocess.run(
+            ["git", "checkout", "-b", BOOT_BRANCH, "origin/main"],
+            cwd=str(REPO_DIR), check=True,
+        )
+        subprocess.run(
+            ["git", "push", "-u", "origin", BOOT_BRANCH],
+            cwd=str(REPO_DIR), check=True,
+        )
+        _STABLE = f"{BOOT_BRANCH}-stable"
+        subprocess.run(["git", "branch", _STABLE], cwd=str(REPO_DIR), check=True)
+        subprocess.run(
+            ["git", "push", "-u", "origin", _STABLE],
+            cwd=str(REPO_DIR), check=True,
+        )
 HEAD_SHA = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(REPO_DIR), text=True).strip()
 print(
     "[boot] branch=%s sha=%s worker_start=%s diag_heartbeat=%ss"
