@@ -136,6 +136,7 @@ def _build_step_github(github_fields, go_step, on_finish):
 
 def run_first_run_wizard(
     models: list, settings_defaults: dict, save_fn,
+    assets_dir: str = "assets",
 ) -> bool:
     """Show a setup wizard. Returns True if user completed setup."""
     _completed = [False]
@@ -218,7 +219,11 @@ def run_first_run_wizard(
             visible=True, spacing=20,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
-                ft.Text("O", size=64, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_200),
+                ft.Container(
+                    width=80, height=80, border_radius=18,
+                    clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+                    content=ft.Image(src="logo.jpg", width=80, height=80, fit=ft.ImageFit.COVER),
+                ),
                 ft.Text("Welcome to Ouroboros", size=24, weight=ft.FontWeight.BOLD),
                 ft.Text("A self-creating agent running locally on your Mac.\n"
                         "Let\u2019s get you set up in a few steps.",
@@ -254,5 +259,5 @@ def run_first_run_wizard(
             content=ft.Stack(controls=step_views),
         ))
 
-    ft.app(target=_wizard)
+    ft.app(target=_wizard, assets_dir=assets_dir)
     return _completed[0]

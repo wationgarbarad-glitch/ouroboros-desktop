@@ -48,6 +48,7 @@ def _read_version() -> str:
 
 APP_VERSION = _read_version()
 APP_START = time.time()
+ASSETS_DIR = str(pathlib.Path(sys._MEIPASS) / "assets") if getattr(sys, 'frozen', False) else str(pathlib.Path(__file__).parent / "assets")
 
 # ---------------------------------------------------------------------------
 # Paths and Bootstrapping
@@ -501,6 +502,14 @@ from ui.log_format import LOG_CATEGORIES, categorize_event, format_log_entry
 from ui.notifications import notify_macos
 
 
+def _logo(size: int = 48, radius: int = 12) -> ft.Container:
+    return ft.Container(
+        width=size, height=size, border_radius=radius,
+        clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+        content=ft.Image(src="logo.jpg", width=size, height=size, fit=ft.ImageFit.COVER),
+    )
+
+
 def main(page: ft.Page):
     page.title = f"Ouroboros v{APP_VERSION}"
     page.theme_mode = ft.ThemeMode.DARK
@@ -787,7 +796,7 @@ def main(page: ft.Page):
     nav_rail = ft.NavigationRail(
         selected_index=0, label_type=ft.NavigationRailLabelType.ALL, min_width=80, group_alignment=-0.9, on_change=on_nav_change,
         leading=ft.Container(padding=ft.padding.only(top=10, bottom=6), content=ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2,
-                             controls=[ft.Text("O", size=28, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_200), ft.Text(f"v{APP_VERSION}", size=9, color=ft.Colors.WHITE38)])),
+                             controls=[_logo(36, 8), ft.Text(f"v{APP_VERSION}", size=9, color=ft.Colors.WHITE38)])),
         destinations=[
             ft.NavigationRailDestination(icon=ft.Icons.CHAT_OUTLINED, selected_icon=ft.Icons.CHAT, label="Chat"),
             ft.NavigationRailDestination(icon=ft.Icons.DASHBOARD_OUTLINED, selected_icon=ft.Icons.DASHBOARD, label="Dashboard"),
@@ -908,7 +917,7 @@ def check_prerequisites():
             threading.Thread(target=_poll, daemon=True).start()
 
         page.add(ft.Column(spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER, controls=[
-            ft.Text("O", size=48, weight=ft.FontWeight.BOLD, color=ft.Colors.TEAL_200),
+            _logo(64, 14),
             ft.Text("Git is required", size=20, weight=ft.FontWeight.BOLD),
             ft.Text("Ouroboros needs Git to manage its local repository.\nClick below to install Apple's Command Line Tools (includes Git).",
                      size=13, color=ft.Colors.WHITE70, text_align=ft.TextAlign.CENTER),
@@ -916,7 +925,7 @@ def check_prerequisites():
             status_text,
         ]))
 
-    ft.app(target=_prereq_page)
+    ft.app(target=_prereq_page, assets_dir=ASSETS_DIR)
     if not shutil.which("git"):
         log.error("Git still not available after prereq dialog. Exiting.")
         sys.exit(1)
@@ -967,7 +976,7 @@ if __name__ == "__main__":
                 ft.FilledButton("OK", on_click=lambda _: page.window.destroy()),
             ]))
 
-        ft.app(target=_already_running)
+        ft.app(target=_already_running, assets_dir=ASSETS_DIR)
         sys.exit(0)
 
     import atexit
@@ -980,10 +989,10 @@ if __name__ == "__main__":
     if not settings.get("OPENROUTER_API_KEY"):
         log.info("No API key configured. Launching first-run wizard.")
         from ui.first_run import run_first_run_wizard
-        if not run_first_run_wizard(MODELS, _SETTINGS_DEFAULTS, save_settings):
+        if not run_first_run_wizard(MODELS, _SETTINGS_DEFAULTS, save_settings, assets_dir=ASSETS_DIR):
             log.info("Wizard cancelled. Launching main UI anyway.")
 
     start_supervisor_if_configured()
 
     log.info("Starting Flet UI...")
-    ft.app(target=main)
+    ft.app(target=main, assets_dir=ASSETS_DIR)

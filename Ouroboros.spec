@@ -12,6 +12,7 @@ a = Analysis(
         ('supervisor', 'supervisor'),
         ('ui', 'ui'),
         ('prompts', 'prompts'),
+        ('assets', 'assets'),
         ('BIBLE.md', '.'),
         ('VERSION', '.'),
         ('README.md', '.'),
