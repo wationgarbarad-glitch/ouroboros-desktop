@@ -49,6 +49,9 @@ class ToolContext:
     event_queue: Optional[Any] = None
     task_id: Optional[str] = None
 
+    # Conversation messages (set by loop.py so safety checks have context)
+    messages: Optional[List[Dict[str, Any]]] = None
+
     # Task depth for fork bomb protection
     task_depth: int = 0
 
@@ -193,16 +196,20 @@ class ToolRegistry:
                     
         # --- LLM Safety Supervisor ---
         from ouroboros.safety import check_safety
-        is_safe, error_msg = check_safety(name, args)
+        is_safe, safety_msg = check_safety(name, args, messages=getattr(self._ctx, "messages", None))
         if not is_safe:
-            return error_msg
+            return safety_msg
 
         try:
-            return entry.handler(self._ctx, **args)
+            result = entry.handler(self._ctx, **args)
         except TypeError as e:
             return f"⚠️ TOOL_ARG_ERROR ({name}): {e}"
         except Exception as e:
             return f"⚠️ TOOL_ERROR ({name}): {e}"
+
+        if safety_msg:
+            return f"{safety_msg}\n\n---\n{result}"
+        return result
 
     def override_handler(self, name: str, handler) -> None:
         """Override the handler for a registered tool (used for closure injection)."""

@@ -640,6 +640,8 @@ def run_llm_loop(
     # Set budget tracking on tool context for real-time usage events
     tools._ctx.event_queue = event_queue
     tools._ctx.task_id = task_id
+    # Conversation context for safety checks (reference, not copy)
+    tools._ctx.messages = messages
     # Thread-sticky executor for browser tools (Playwright sync requires greenlet thread-affinity)
     stateful_executor = _StatefulToolExecutor()
     # Dedup set for per-task owner messages from Drive mailbox
