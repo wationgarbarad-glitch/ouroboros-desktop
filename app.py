@@ -797,15 +797,17 @@ def main(page: ft.Page):
 
     def _on_window_event(e):
         if e.data == "close":
-            log.info("Window closing \u2014 graceful shutdown.")
-            try:
-                from supervisor.state import load_state as _ls2, save_state as _ss2; _ss2(_ls2())
-            except Exception: pass
-            try:
-                from supervisor.workers import kill_workers as _kw; _kw()
-            except Exception: pass
-            for h in logging.getLogger().handlers: h.flush()
+            log.info("Window closing — graceful shutdown.")
             page.window.destroy()
+            def _cleanup():
+                try:
+                    from supervisor.state import load_state as _ls2, save_state as _ss2; _ss2(_ls2())
+                except Exception: pass
+                try:
+                    from supervisor.workers import kill_workers as _kw; _kw()
+                except Exception: pass
+                for h in logging.getLogger().handlers: h.flush()
+            threading.Thread(target=_cleanup, daemon=True).start()
 
     page.window.on_event = _on_window_event
     page.window.prevent_close = True
