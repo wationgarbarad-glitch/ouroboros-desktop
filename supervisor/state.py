@@ -127,7 +127,9 @@ def ensure_state_defaults(st: Dict[str, Any]) -> Dict[str, Any]:
     st.setdefault("created_at", datetime.datetime.now(datetime.timezone.utc).isoformat())
     st.setdefault("owner_id", None)
     st.setdefault("owner_chat_id", None)
-    st.setdefault("tg_offset", 0)
+    st.setdefault("message_offset", 0)
+    if "tg_offset" in st:
+        st.setdefault("message_offset", st.pop("tg_offset"))
     st.setdefault("spent_usd", 0.0)
     st.setdefault("spent_calls", 0)
     st.setdefault("spent_tokens_prompt", 0)
@@ -243,7 +245,7 @@ def init_state() -> Dict[str, Any]:
 # Budget tracking (moved from workers.py)
 # ---------------------------------------------------------------------------
 TOTAL_BUDGET_LIMIT: float = 0.0
-EVOLUTION_BUDGET_RESERVE: float = 50.0  # Stop evolution when remaining < this
+EVOLUTION_BUDGET_RESERVE: float = 2.0  # Stop evolution when remaining < this
 
 
 def set_budget_limit(limit: float) -> None:

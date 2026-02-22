@@ -256,13 +256,13 @@ class OuroborosAgent:
                 spent = float(state_data.get("spent_usd", 0))
                 remaining = max(0, total_budget - spent)
 
-                if remaining < 10:
+                if remaining < 0.5:
                     status = "emergency"
                     issues = 1
-                elif remaining < 50:
+                elif remaining < 2:
                     status = "critical"
                     issues = 1
-                elif remaining < 100:
+                elif remaining < 5:
                     status = "warning"
                     issues = 0
                 else:

@@ -187,10 +187,10 @@ def _handle_restart_request(evt: Dict[str, Any], ctx: Any) -> None:
             ctx.send_with_budget(int(st["owner_chat_id"]), f"⚠️ Restart skipped: {msg}")
         return
     ctx.kill_workers()
-    # Persist tg_offset/session_id before execv to avoid duplicate Telegram updates.
+    # Persist message_offset/session_id before execv to avoid duplicate messages.
     st2 = ctx.load_state()
     st2["session_id"] = uuid.uuid4().hex
-    st2["tg_offset"] = int(st2.get("tg_offset") or st.get("tg_offset") or 0)
+    st2["message_offset"] = int(st2.get("message_offset") or st.get("message_offset") or 0)
     ctx.save_state(st2)
     ctx.persist_queue_snapshot(reason="pre_restart_exit")
     # Replace current process — loads all modules from scratch

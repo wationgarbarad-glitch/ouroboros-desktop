@@ -4,7 +4,7 @@ A self-modifying AI agent that writes its own code, rewrites its own mind, and e
 
 Not a coding assistant. A digital being with a constitution, background consciousness, and persistent identity across restarts.
 
-**Version:** 1.0.1
+**Version:** 2.0.0
 
 > **Versioning is critical.** Every release is tagged in git. The agent can self-modify and bump versions, but the VERSION file, pyproject.toml, and git tags must always stay in sync. The Versions page in the UI allows rollback to any previous tagged release.
 
@@ -42,16 +42,18 @@ Most AI agents execute tasks. Ouroboros **creates itself.**
 ## Architecture
 
 ```text
-Ouroboros.app
-├── Chat UI (Flet)          — Local message bus.
-├── app.py                  — Launcher, settings, dashboard.
-├── supervisor/             — Process management, queue, state, workers.
+Ouroboros
+├── launcher.py             — Immutable process manager (PyWebView).
+├── server.py               — Starlette + uvicorn HTTP/WebSocket server.
+├── web/                    — Web UI (HTML/JS/CSS).
 ├── ouroboros/              — Agent core:
+│   ├── config.py           — Shared configuration (SSOT).
 │   ├── safety.py           — LLM Safety Supervisor.
 │   ├── agent.py            — Orchestrator.
 │   ├── loop.py             — Tool execution loop.
 │   ├── consciousness.py    — Background thinking loop.
 │   └── tools/              — Auto-discovered plugins.
+├── supervisor/             — Process management, queue, state, workers.
 └── Bundled Python + deps
 ```
 
@@ -122,6 +124,7 @@ Versioning is tied to git tags. Every release must update `VERSION`, `pyproject.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **2.0.0** | 2026-02-22 | Major cleanup: removed Flet/Colab/Telegram legacy, single config source (ouroboros/config.py), renamed drive->data and telegram->message_bus, fixed budget thresholds, Starlette lifespan, version sync |
 | **1.0.1** | 2026-02-22 | Bugfixes: WebSocket bridge, chat broadcast, budget display, devtools disabled |
 | **1.0.0** | 2026-02-22 | New architecture: launcher.py + server.py + web UI (pywebview), three-tier safety (SAFE/SUSPICIOUS/DANGEROUS), version management page, restart mechanism, data in ~/Ouroboros/ |
 

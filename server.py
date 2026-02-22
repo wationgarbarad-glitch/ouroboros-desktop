@@ -103,64 +103,12 @@ def broadcast_ws_sync(msg: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Settings (read from env / settings.json)
+# Settings (single source of truth: ouroboros.config)
 # ---------------------------------------------------------------------------
-SETTINGS_PATH = DATA_DIR / "settings.json"
-_SETTINGS_LOCK = pathlib.Path(str(SETTINGS_PATH) + ".lock")
-
-_SETTINGS_DEFAULTS = {
-    "OPENROUTER_API_KEY": "",
-    "OPENAI_API_KEY": "",
-    "ANTHROPIC_API_KEY": "",
-    "OUROBOROS_MODEL": "anthropic/claude-sonnet-4.6",
-    "OUROBOROS_MODEL_CODE": "anthropic/claude-sonnet-4.6",
-    "OUROBOROS_MODEL_LIGHT": "google/gemini-2.5-flash",
-    "OUROBOROS_MODEL_FALLBACK": "google/gemini-2.5-flash",
-    "OUROBOROS_MAX_WORKERS": 5,
-    "TOTAL_BUDGET": 10.0,
-    "OUROBOROS_SOFT_TIMEOUT_SEC": 600,
-    "OUROBOROS_HARD_TIMEOUT_SEC": 1800,
-    "OUROBOROS_BG_MAX_ROUNDS": 5,
-    "OUROBOROS_BG_WAKEUP_MIN": 30,
-    "OUROBOROS_BG_WAKEUP_MAX": 7200,
-    "OUROBOROS_EVO_COST_THRESHOLD": 0.10,
-    "OUROBOROS_WEBSEARCH_MODEL": "gpt-5",
-    "GITHUB_TOKEN": "",
-    "GITHUB_REPO": "",
-}
-
-
-def load_settings() -> dict:
-    if SETTINGS_PATH.exists():
-        try:
-            return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    return dict(_SETTINGS_DEFAULTS)
-
-
-def save_settings(settings: dict) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = SETTINGS_PATH.with_suffix(".tmp")
-    tmp.write_text(json.dumps(settings, indent=2), encoding="utf-8")
-    os.replace(str(tmp), str(SETTINGS_PATH))
-
-
-def _apply_settings_to_env(settings: dict) -> None:
-    """Push settings into environment variables for supervisor modules."""
-    env_keys = [
-        "OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
-        "OUROBOROS_MODEL", "OUROBOROS_MODEL_CODE", "OUROBOROS_MODEL_LIGHT",
-        "OUROBOROS_MODEL_FALLBACK", "TOTAL_BUDGET", "GITHUB_TOKEN", "GITHUB_REPO",
-        "OUROBOROS_BG_MAX_ROUNDS", "OUROBOROS_BG_WAKEUP_MIN", "OUROBOROS_BG_WAKEUP_MAX",
-        "OUROBOROS_EVO_COST_THRESHOLD", "OUROBOROS_WEBSEARCH_MODEL",
-    ]
-    for k in env_keys:
-        val = settings.get(k)
-        if val is not None and str(val):
-            os.environ[k] = str(val)
-        elif k in os.environ and not val:
-            os.environ.pop(k, None)
+from ouroboros.config import (
+    SETTINGS_DEFAULTS as _SETTINGS_DEFAULTS,
+    load_settings, save_settings, apply_settings_to_env as _apply_settings_to_env,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +136,7 @@ def _run_supervisor(settings: dict) -> None:
         set_log_sink(bridge.push_log)
 
         telegram_init(
-            drive_root=DATA_DIR,
+            data_dir=DATA_DIR,
             total_budget_limit=float(settings.get("TOTAL_BUDGET", 10.0)),
             budget_report_every=10,
             tg_client=bridge,
@@ -201,7 +149,7 @@ def _run_supervisor(settings: dict) -> None:
 
         from supervisor.git_ops import init as git_ops_init, ensure_repo_present, safe_restart
         git_ops_init(
-            repo_dir=REPO_DIR, drive_root=DATA_DIR, remote_url="",
+            repo_dir=REPO_DIR, data_dir=DATA_DIR, remote_url="",
             branch_dev="ouroboros", branch_stable="ouroboros-stable",
         )
         ensure_repo_present()
@@ -225,7 +173,7 @@ def _run_supervisor(settings: dict) -> None:
         hard_timeout = int(settings.get("OUROBOROS_HARD_TIMEOUT_SEC", 1800))
 
         workers_init(
-            repo_dir=REPO_DIR, drive_root=DATA_DIR, max_workers=max_workers,
+            repo_dir=REPO_DIR, data_dir=DATA_DIR, max_workers=max_workers,
             soft_timeout=soft_timeout, hard_timeout=hard_timeout,
             total_budget_limit=float(settings.get("TOTAL_BUDGET", 10.0)),
             branch_dev="ouroboros", branch_stable="ouroboros-stable",
@@ -259,12 +207,12 @@ def _run_supervisor(settings: dict) -> None:
                 return None
 
         _consciousness = BackgroundConsciousness(
-            drive_root=DATA_DIR, repo_dir=REPO_DIR,
+            data_dir=DATA_DIR, repo_dir=REPO_DIR,
             event_queue=get_event_q(), owner_chat_id_fn=_get_owner_chat_id,
         )
 
         _event_ctx = types.SimpleNamespace(
-            DRIVE_ROOT=DATA_DIR, REPO_DIR=REPO_DIR,
+            DATA_DIR=DATA_DIR, REPO_DIR=REPO_DIR,
             BRANCH_DEV="ouroboros", BRANCH_STABLE="ouroboros-stable",
             TG=bridge, WORKERS=WORKERS, PENDING=PENDING, RUNNING=RUNNING,
             MAX_WORKERS=max_workers,
@@ -623,11 +571,7 @@ async def index_page(request: Request) -> FileResponse:
     return HTMLResponse("<html><body><h1>Ouroboros — web/ not found</h1></body></html>", status_code=404)
 
 
-def _read_version() -> str:
-    try:
-        return (REPO_DIR / "VERSION").read_text(encoding="utf-8").strip()
-    except Exception:
-        return "0.0.0"
+from ouroboros.config import read_version as _read_version
 
 
 # ---------------------------------------------------------------------------
@@ -651,13 +595,13 @@ routes = [
     Mount("/static", app=StaticFiles(directory=str(web_dir)), name="static"),
 ]
 
-app = Starlette(routes=routes)
+from contextlib import asynccontextmanager
 
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app):
     global _event_loop
-    _event_loop = asyncio.get_event_loop()
+    _event_loop = asyncio.get_running_loop()
 
     settings = load_settings()
     if settings.get("OPENROUTER_API_KEY"):
@@ -666,15 +610,17 @@ async def startup_event():
         _supervisor_ready.set()
         log.info("No API key configured. Supervisor not started.")
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown_event():
     log.info("Server shutting down...")
     try:
         from supervisor.workers import kill_workers
         kill_workers(force=True)
     except Exception:
         pass
+
+
+app = Starlette(routes=routes, lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------

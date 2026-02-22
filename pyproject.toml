@@ -1,13 +1,15 @@
 [project]
 name = "ouroboros"
-version = "1.0.1"
+version = "2.0.0"
 description = "Self-creating agent"
 requires-python = ">=3.10"
 dependencies = [
     "openai>=1.66.0",
     "requests",
-    "flet",
     "dulwich",
+    "starlette",
+    "uvicorn[standard]",
+    "websockets",
 ]
 
 [tool.pytest.ini_options]

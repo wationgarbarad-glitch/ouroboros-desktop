@@ -25,23 +25,13 @@ import time
 from typing import Optional
 
 # ---------------------------------------------------------------------------
-# Paths
+# Paths (single source of truth: ouroboros.config)
 # ---------------------------------------------------------------------------
-HOME = pathlib.Path.home()
-APP_ROOT = HOME / "Ouroboros"
-REPO_DIR = APP_ROOT / "repo"
-DATA_DIR = APP_ROOT / "data"
-SETTINGS_PATH = DATA_DIR / "settings.json"
-PID_FILE = APP_ROOT / "ouroboros.pid"
-PORT_FILE = DATA_DIR / "state" / "server_port"
-
-_OLD_LOCATIONS = [
-    HOME / "Library" / "Application Support" / "Ouroboros",
-    HOME / "Ouroboros",
-]
-
-RESTART_EXIT_CODE = 42
-AGENT_SERVER_PORT = 8765
+from ouroboros.config import (
+    HOME, APP_ROOT, REPO_DIR, DATA_DIR, SETTINGS_PATH, PID_FILE, PORT_FILE,
+    RESTART_EXIT_CODE, AGENT_SERVER_PORT,
+    read_version, load_settings, save_settings, acquire_pid_lock, release_pid_lock,
+)
 MAX_CRASH_RESTARTS = 5
 CRASH_WINDOW_SEC = 120
 
@@ -65,43 +55,7 @@ logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT, handlers=_handlers)
 log = logging.getLogger("launcher")
 
 
-def _read_version() -> str:
-    try:
-        if getattr(sys, "frozen", False):
-            vp = pathlib.Path(sys._MEIPASS) / "VERSION"
-        else:
-            vp = pathlib.Path(__file__).parent / "VERSION"
-        return vp.read_text(encoding="utf-8").strip()
-    except Exception:
-        return "0.0.0"
-
-
-APP_VERSION = _read_version()
-
-
-# ---------------------------------------------------------------------------
-# PID lock
-# ---------------------------------------------------------------------------
-def acquire_pid_lock() -> bool:
-    APP_ROOT.mkdir(parents=True, exist_ok=True)
-    if PID_FILE.exists():
-        try:
-            existing_pid = int(PID_FILE.read_text(encoding="utf-8").strip())
-            if existing_pid != os.getpid():
-                os.kill(existing_pid, 0)
-                return False
-        except (ProcessLookupError, PermissionError, ValueError, OSError):
-            PID_FILE.unlink(missing_ok=True)
-    PID_FILE.write_text(str(os.getpid()), encoding="utf-8")
-    return True
-
-
-def release_pid_lock() -> None:
-    try:
-        if PID_FILE.exists() and PID_FILE.read_text(encoding="utf-8").strip() == str(os.getpid()):
-            PID_FILE.unlink(missing_ok=True)
-    except Exception:
-        pass
+APP_VERSION = read_version()
 
 
 # ---------------------------------------------------------------------------
@@ -159,23 +113,8 @@ def _sync_core_files() -> None:
     log.info("Synced %d core files to %s", len(sync_paths), REPO_DIR)
 
 
-def _migrate_from_old_location() -> None:
-    """Move data from any old location to ~/Ouroboros/."""
-    if APP_ROOT.exists():
-        return
-    for old in _OLD_LOCATIONS:
-        if old.exists():
-            log.info("Migrating data from %s to %s", old, APP_ROOT)
-            try:
-                shutil.move(str(old), str(APP_ROOT))
-                return
-            except OSError as e:
-                log.warning("Migration from %s failed: %s", old, e)
-
-
 def bootstrap_repo() -> None:
     """Copy bundled codebase to REPO_DIR on first run, sync core files always."""
-    _migrate_from_old_location()
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if REPO_DIR.exists() and (REPO_DIR / "server.py").exists():
         _sync_core_files()
@@ -493,15 +432,10 @@ def agent_lifecycle_loop(port: int = AGENT_SERVER_PORT) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Settings
+# Settings (delegated to ouroboros.config)
 # ---------------------------------------------------------------------------
 def _load_settings() -> dict:
-    if SETTINGS_PATH.exists():
-        try:
-            return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    return {}
+    return load_settings()
 
 
 # ---------------------------------------------------------------------------
@@ -563,10 +497,7 @@ btn.addEventListener('click', async () => {
 
 
 def _save_settings(settings: dict) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = SETTINGS_PATH.with_suffix(".tmp")
-    tmp.write_text(json.dumps(settings, indent=2), encoding="utf-8")
-    os.replace(str(tmp), str(SETTINGS_PATH))
+    save_settings(settings)
 
 
 def _run_first_run_wizard() -> bool:
