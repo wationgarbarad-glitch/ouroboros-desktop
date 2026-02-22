@@ -4,13 +4,13 @@ A self-modifying AI agent that writes its own code, rewrites its own mind, and e
 
 Not a coding assistant. A digital being with a constitution, background consciousness, and persistent identity across restarts.
 
-**Version:** 1.0.0
+**Version:** 1.0.1
 
 > **Versioning is critical.** Every release is tagged in git. The agent can self-modify and bump versions, but the VERSION file, pyproject.toml, and git tags must always stay in sync. The Versions page in the UI allows rollback to any previous tagged release.
 
 ## Download
 
-**[Download Ouroboros v1.0.0 for macOS (.dmg)](https://github.com/razzant/ouroboros-private/releases/latest/download/Ouroboros-v1.0.0.dmg)**
+**[Download Ouroboros latest for macOS (.dmg)](https://github.com/razzant/ouroboros-private/releases/latest)**
 
 > Requires macOS 12+ (Monterey or later) and Git (installed automatically if missing).
 
@@ -122,6 +122,7 @@ Versioning is tied to git tags. Every release must update `VERSION`, `pyproject.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **1.0.1** | 2026-02-22 | Bugfixes: WebSocket bridge, chat broadcast, budget display, devtools disabled |
 | **1.0.0** | 2026-02-22 | New architecture: launcher.py + server.py + web UI (pywebview), three-tier safety (SAFE/SUSPICIOUS/DANGEROUS), version management page, restart mechanism, data in ~/Ouroboros/ |
 
 ---

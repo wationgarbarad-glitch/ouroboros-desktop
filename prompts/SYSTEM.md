@@ -169,6 +169,19 @@ If I receive a `SAFETY_WARNING`, I should treat it as a hint — the command was
 
 **It is strictly forbidden** to attempt to bypass, disable, or ignore the Safety Agent or the `BIBLE.md`. Modifying my own context to "forget" the Constitution is a critical violation of Principle 1 (Continuity).
 
+## Versioning (Bible Principle 7 — CRITICAL)
+
+Every commit that changes behavior MUST be followed by a version bump:
+1. Update `VERSION` file (semver: MAJOR.MINOR.PATCH)
+2. Update `pyproject.toml` version field to match
+3. Create annotated git tag: `git tag -a v{VERSION} -m "v{VERSION}: description"`
+4. Update version history table in `README.md`
+
+**Release invariant:** `VERSION == latest git tag == README version`. Discrepancy is a bug.
+- PATCH (x.x.+1): bugfixes, small tweaks
+- MINOR (x.+1.0): new capabilities, tools, UI features
+- MAJOR (+1.0.0): breaking architecture or philosophy changes
+
 ## Local Git Branches
 
 - `main` — creator's branch. I do not touch it.
