@@ -480,51 +480,116 @@ def _load_settings() -> dict:
 _WIZARD_HTML = """<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#0f0f1a; color:#e2e8f0; font-family:-apple-system,system-ui,sans-serif;
-       display:flex; align-items:center; justify-content:center; height:100vh; }
-.card { background:rgba(255,255,255,.06); border-radius:16px; padding:32px; width:440px; }
-h2 { font-size:22px; margin-bottom:4px; }
-.sub { color:rgba(255,255,255,.5); font-size:13px; margin-bottom:20px; }
-label { display:block; font-size:12px; color:rgba(255,255,255,.5); margin-bottom:4px; margin-top:14px; }
-input { width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,.12);
-        background:#1a1a2e; color:#e2e8f0; font-size:14px; outline:none; font-family:inherit; }
-input:focus { border-color:#2dd4bf; }
+body { background:#0d0b0f; color:#e2e8f0; font-family:-apple-system,system-ui,sans-serif;
+       display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px 0; }
+.card { background:rgba(255,255,255,.06); border-radius:16px; padding:28px 32px; width:480px;
+        max-height:90vh; overflow-y:auto; }
+h2 { font-size:22px; margin-bottom:4px; color:#e85d6f; }
+.sub { color:rgba(255,255,255,.5); font-size:13px; margin-bottom:16px; }
+h3 { font-size:14px; color:rgba(255,255,255,.6); margin-top:18px; margin-bottom:8px;
+     border-top:1px solid rgba(255,255,255,.08); padding-top:14px; }
+label { display:block; font-size:12px; color:rgba(255,255,255,.5); margin-bottom:4px; margin-top:10px; }
+input, select { width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,.12);
+        background:#1a1520; color:#e2e8f0; font-size:14px; outline:none; font-family:inherit; }
+input:focus, select:focus { border-color:#e85d6f; }
 .row { display:flex; gap:12px; }
 .row .field { flex:1; }
-.btn { margin-top:20px; width:100%; padding:10px; border-radius:8px; border:none;
-       background:#2dd4bf; color:#0f0f1a; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
-.btn:hover { opacity:.9; }
-.btn:disabled { opacity:.5; cursor:default; }
+.hint { font-size:11px; color:rgba(255,255,255,.35); margin-top:3px; }
+.btn { margin-top:20px; width:100%; padding:11px; border-radius:8px; border:none;
+       background:#dc2626; color:#fff; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+.btn:hover { background:#b91c1c; }
+.btn:disabled { opacity:.4; cursor:default; background:#7f1d1d; }
 .err { color:#ef4444; font-size:12px; margin-top:8px; display:none; }
-a { color:#2dd4bf; }
+a { color:#e85d6f; }
+.opt { font-size:11px; color:rgba(255,255,255,.35); font-style:italic; }
 </style></head><body>
 <div class="card">
-  <h2>Welcome to Ouroboros</h2>
-  <p class="sub">Enter your API key to get started. You can change all settings later.</p>
-  <label>OpenRouter API Key <span style="color:#ef4444">*</span></label>
+  <h2>Ouroboros</h2>
+  <p class="sub">Configure your LLM provider. Everything can be changed later in Settings.</p>
+
+  <h3>Cloud LLM (OpenRouter)</h3>
+  <label>OpenRouter API Key <span class="opt">— required for cloud models</span></label>
   <input id="api-key" type="password" placeholder="sk-or-v1-..." autofocus>
-  <p style="font-size:11px;color:rgba(255,255,255,.38);margin-top:4px">
-    Get one at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a>
-  </p>
-  <label>Total Budget ($)</label>
-  <input id="budget" type="number" value="10" min="1" step="1">
+  <p class="hint">Get one at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></p>
   <div class="row">
     <div class="field"><label>Main Model</label><input id="model" value="anthropic/claude-sonnet-4.6"></div>
+    <div class="field"><label>Budget ($)</label><input id="budget" type="number" value="10" min="1" step="1" style="width:100px"></div>
   </div>
+
+  <label>OpenAI API Key <span class="opt">— for web search</span></label>
+  <input id="openai-key" type="password" placeholder="sk-...">
+  <p class="hint">Enables the web_search tool. <a href="https://platform.openai.com/api-keys" target="_blank">Get key</a></p>
+
+  <h3>Local Model (optional)</h3>
+  <label>Preset</label>
+  <select id="local-preset">
+    <option value="">None — use cloud only</option>
+    <option value="qwen25-7b">Qwen2.5-7B Instruct Q3_K_M (~3.9 GB, 16 GB RAM)</option>
+    <option value="qwen3-14b">Qwen3-14B Instruct Q4_K_M (~9 GB, 32 GB RAM)</option>
+    <option value="qwen3-32b">Qwen3-32B Instruct Q4_K_M (~20 GB, 64 GB RAM)</option>
+    <option value="custom">Custom — I'll enter HuggingFace repo</option>
+  </select>
+  <div id="custom-fields" style="display:none">
+    <label>HuggingFace Source</label>
+    <input id="local-source" placeholder="Qwen/Qwen2.5-7B-Instruct-GGUF">
+    <label>GGUF Filename</label>
+    <input id="local-filename" placeholder="qwen2.5-7b-instruct-q3_k_m.gguf">
+  </div>
+
   <p class="err" id="err"></p>
   <button class="btn" id="save-btn" disabled>Start Ouroboros</button>
 </div>
 <script>
+const PRESETS = {
+    'qwen25-7b':  { source: 'Qwen/Qwen2.5-7B-Instruct-GGUF', filename: 'qwen2.5-7b-instruct-q3_k_m.gguf', ctx: 16384 },
+    'qwen3-14b':  { source: 'Qwen/Qwen3-14B-GGUF', filename: 'Qwen3-14B-Q4_K_M.gguf', ctx: 16384 },
+    'qwen3-32b':  { source: 'Qwen/Qwen3-32B-GGUF', filename: 'Qwen3-32B-Q4_K_M.gguf', ctx: 32768 },
+};
 const keyInput = document.getElementById('api-key');
+const preset = document.getElementById('local-preset');
 const btn = document.getElementById('save-btn');
-keyInput.addEventListener('input', () => { btn.disabled = keyInput.value.trim().length < 10; });
+
+function validate() {
+    const hasKey = keyInput.value.trim().length >= 10;
+    const hasLocal = preset.value !== '';
+    btn.disabled = !(hasKey || hasLocal);
+}
+keyInput.addEventListener('input', validate);
+preset.addEventListener('change', () => {
+    document.getElementById('custom-fields').style.display = preset.value === 'custom' ? '' : 'none';
+    validate();
+});
+
 btn.addEventListener('click', async () => {
     btn.disabled = true; btn.textContent = 'Saving...';
-    const result = await window.pywebview.api.save_wizard({
-        OPENROUTER_API_KEY: keyInput.value.trim(),
+    const data = {
         TOTAL_BUDGET: parseFloat(document.getElementById('budget').value) || 10,
         OUROBOROS_MODEL: document.getElementById('model').value.trim() || 'anthropic/claude-sonnet-4.6',
-    });
+    };
+    const orKey = keyInput.value.trim();
+    if (orKey.length >= 10) data.OPENROUTER_API_KEY = orKey;
+    const oaiKey = document.getElementById('openai-key').value.trim();
+    if (oaiKey.length >= 10) data.OPENAI_API_KEY = oaiKey;
+    const p = preset.value;
+    if (p && p !== 'custom' && PRESETS[p]) {
+        data.LOCAL_MODEL_SOURCE = PRESETS[p].source;
+        data.LOCAL_MODEL_FILENAME = PRESETS[p].filename;
+        data.LOCAL_MODEL_CONTEXT_LENGTH = PRESETS[p].ctx;
+        data.LOCAL_MODEL_N_GPU_LAYERS = 0;
+        data.USE_LOCAL_MAIN = !orKey;
+        data.USE_LOCAL_LIGHT = !orKey;
+        data.USE_LOCAL_CODE = !orKey;
+        data.USE_LOCAL_FALLBACK = true;
+    } else if (p === 'custom') {
+        data.LOCAL_MODEL_SOURCE = document.getElementById('local-source').value.trim();
+        data.LOCAL_MODEL_FILENAME = document.getElementById('local-filename').value.trim();
+        data.LOCAL_MODEL_N_GPU_LAYERS = 0;
+        data.USE_LOCAL_MAIN = !orKey;
+        data.USE_LOCAL_LIGHT = !orKey;
+        data.USE_LOCAL_CODE = !orKey;
+        data.USE_LOCAL_FALLBACK = true;
+    }
+    const result = await window.pywebview.api.save_wizard(data);
     if (result === 'ok') { btn.textContent = 'Starting...'; }
     else { document.getElementById('err').style.display='block';
            document.getElementById('err').textContent=result; btn.disabled=false; btn.textContent='Start Ouroboros'; }
@@ -537,9 +602,9 @@ def _save_settings(settings: dict) -> None:
 
 
 def _run_first_run_wizard() -> bool:
-    """Show setup wizard if no API key configured. Returns True if key was saved."""
+    """Show setup wizard if no API key or local model configured. Returns True if configured."""
     settings = _load_settings()
-    if settings.get("OPENROUTER_API_KEY"):
+    if settings.get("OPENROUTER_API_KEY") or settings.get("LOCAL_MODEL_SOURCE"):
         return True
 
     import webview
@@ -548,8 +613,9 @@ def _run_first_run_wizard() -> bool:
     class WizardApi:
         def save_wizard(self, data: dict) -> str:
             key = str(data.get("OPENROUTER_API_KEY", "")).strip()
-            if len(key) < 10:
-                return "API key is too short."
+            has_local = bool(data.get("LOCAL_MODEL_SOURCE", "").strip())
+            if len(key) < 10 and not has_local:
+                return "Provide an OpenRouter API key or select a local model."
             settings.update(data)
             try:
                 _save_settings(settings)

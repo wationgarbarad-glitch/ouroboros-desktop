@@ -252,7 +252,7 @@ function initChat() {
     });
 
     if (_chatHistory.length === 0) {
-        addMessage('Welcome! Type a message or use /commands (/status, /evolve, /review, /bg, /restart).', 'assistant');
+        addMessage('Consciousness loaded.', 'assistant');
     }
 }
 
