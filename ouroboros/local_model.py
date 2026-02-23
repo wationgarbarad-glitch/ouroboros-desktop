@@ -173,8 +173,8 @@ class LocalModelManager:
                 "--n_gpu_layers", str(n_gpu_layers),
                 "--chat_format", chat_format,
             ]
-            if n_ctx > 0:
-                cmd.extend(["--n_ctx", str(n_ctx)])
+            effective_ctx = n_ctx if n_ctx > 0 else 4096
+            cmd.extend(["--n_ctx", str(effective_ctx)])
 
             log.info("Starting local model server: %s", " ".join(cmd))
 

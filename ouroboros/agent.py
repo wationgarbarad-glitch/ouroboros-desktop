@@ -387,7 +387,9 @@ class OuroborosAgent:
                     from ouroboros.local_model import get_manager
                     _local_ctx = get_manager().get_context_length()
                 except Exception:
-                    _local_ctx = 4096
+                    _local_ctx = 0
+            if _local_ctx <= 0:
+                _local_ctx = 32768
             _soft_cap = max(2048, _local_ctx - 4096)
         messages, cap_info = build_llm_messages(
             env=self.env,

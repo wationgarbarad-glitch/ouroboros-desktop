@@ -224,10 +224,20 @@ class LLMClient:
                 for t in tools
             ]
 
+        # Cap max_tokens to fit within the model's context window
+        local_max = min(max_tokens, 2048)
+        try:
+            from ouroboros.local_model import get_manager
+            ctx_len = get_manager().get_context_length()
+            if ctx_len > 0:
+                local_max = min(max_tokens, max(256, ctx_len // 4))
+        except Exception:
+            pass
+
         kwargs: Dict[str, Any] = {
             "model": "local-model",
             "messages": clean_messages,
-            "max_tokens": max_tokens,
+            "max_tokens": local_max,
         }
         if clean_tools:
             kwargs["tools"] = clean_tools
