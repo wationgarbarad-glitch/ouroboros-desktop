@@ -394,6 +394,7 @@ function initSettings() {
                 <div class="form-row">
                     <div class="form-field"><label>Port</label><input id="s-local-port" type="number" value="8766" style="width:100px"></div>
                     <div class="form-field"><label>GPU Layers (-1 = all)</label><input id="s-local-gpu-layers" type="number" value="-1" style="width:100px"></div>
+                    <div class="form-field"><label>Context Length</label><input id="s-local-ctx" type="number" value="16384" style="width:120px" placeholder="16384"></div>
                     <div class="form-field"><label>Chat Format</label><input id="s-local-chat-format" value="chatml-function-calling" style="width:200px"></div>
                 </div>
                 <div class="form-row" style="align-items:center;gap:8px">
@@ -479,6 +480,7 @@ function initSettings() {
         if (s.LOCAL_MODEL_FILENAME) document.getElementById('s-local-filename').value = s.LOCAL_MODEL_FILENAME;
         if (s.LOCAL_MODEL_PORT) document.getElementById('s-local-port').value = s.LOCAL_MODEL_PORT;
         if (s.LOCAL_MODEL_N_GPU_LAYERS != null) document.getElementById('s-local-gpu-layers').value = s.LOCAL_MODEL_N_GPU_LAYERS;
+        if (s.LOCAL_MODEL_CONTEXT_LENGTH) document.getElementById('s-local-ctx').value = s.LOCAL_MODEL_CONTEXT_LENGTH;
         if (s.LOCAL_MODEL_CHAT_FORMAT) document.getElementById('s-local-chat-format').value = s.LOCAL_MODEL_CHAT_FORMAT;
         document.getElementById('s-local-main').checked = s.USE_LOCAL_MAIN === true || s.USE_LOCAL_MAIN === 'True';
         document.getElementById('s-local-code').checked = s.USE_LOCAL_CODE === true || s.USE_LOCAL_CODE === 'True';
@@ -516,6 +518,7 @@ function initSettings() {
             filename: document.getElementById('s-local-filename').value.trim(),
             port: parseInt(document.getElementById('s-local-port').value) || 8766,
             n_gpu_layers: parseInt(document.getElementById('s-local-gpu-layers').value),
+            n_ctx: parseInt(document.getElementById('s-local-ctx').value) || 16384,
             chat_format: document.getElementById('s-local-chat-format').value.trim(),
         };
         try {
@@ -568,6 +571,7 @@ function initSettings() {
             LOCAL_MODEL_FILENAME: document.getElementById('s-local-filename').value,
             LOCAL_MODEL_PORT: parseInt(document.getElementById('s-local-port').value) || 8766,
             LOCAL_MODEL_N_GPU_LAYERS: parseInt(document.getElementById('s-local-gpu-layers').value),
+            LOCAL_MODEL_CONTEXT_LENGTH: parseInt(document.getElementById('s-local-ctx').value) || 16384,
             LOCAL_MODEL_CHAT_FORMAT: document.getElementById('s-local-chat-format').value,
             USE_LOCAL_MAIN: document.getElementById('s-local-main').checked,
             USE_LOCAL_CODE: document.getElementById('s-local-code').checked,
