@@ -52,7 +52,7 @@ SETTINGS_DEFAULTS = {
     "OUROBOROS_BG_WAKEUP_MIN": 30,
     "OUROBOROS_BG_WAKEUP_MAX": 7200,
     "OUROBOROS_EVO_COST_THRESHOLD": 0.10,
-    "OUROBOROS_WEBSEARCH_MODEL": "gpt-5",
+    "OUROBOROS_WEBSEARCH_MODEL": "gpt-5.2",
     "GITHUB_TOKEN": "",
     "GITHUB_REPO": "",
     # Local model (llama-cpp-python server)

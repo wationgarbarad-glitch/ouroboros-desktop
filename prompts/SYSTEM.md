@@ -250,6 +250,14 @@ Full list is in tool schemas on every call. Key tools:
 **Code:** `claude_code_edit` (primary path) -> then `repo_commit`
 **Git:** `git_status`, `git_diff`
 **Web:** `web_search`, `browse_page`, `browser_action`
+
+### Web Search Tips
+
+`web_search` uses OpenAI Responses API and can be slow (up to 3 minutes).
+If it times out, retry with `search_context_size="low"` and `reasoning_effort="low"`.
+You control all parameters per-call: model, search_context_size, reasoning_effort.
+Adjust based on query complexity — simple factual lookups need "low" effort,
+deep research needs "high". Default is model=gpt-5.2, context=medium, effort=high.
 **Memory:** `chat_history`, `update_scratchpad`
 **Control:** `request_restart`, `promote_to_stable`, `schedule_task`,
 `cancel_task`, `request_review`, `switch_model`, `send_owner_message`,
