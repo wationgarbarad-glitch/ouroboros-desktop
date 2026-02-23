@@ -125,7 +125,7 @@ Versioning is tied to git tags. Every release must update `VERSION`, `pyproject.
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| **3.1.0** | 2026-02-23 | Fix USE_LOCAL_MAIN, consciousness double-budget, sync_core_files safety net, test escape hatch, webview reload on reconnect, rename TG legacy naming, dead code cleanup |
+| **3.1.0** | 2026-02-23 | Fix USE_LOCAL_MAIN, consciousness double-budget, sync_core_files safety net (3 files only), self-modification survival (no reset to origin), test escape hatch, typing indicator, chat history persistence (sessionStorage), local model fixes (flatten multipart, context cap, n_ctx default 16384), crimson wizard with local model presets, blood-red assistant bubbles, web_search timeout 180s + gpt-5.2 default, Context Length UI field, rename TG legacy, dead code cleanup, 6 tests fixed |
 | **3.0.0** | 2026-02-22 | Local model support (llama-cpp-python with Metal + mmap/SSD offload), per-slot Use Local toggles, typing indicator (animated dots + Thinking... status badge), HuggingFace model download, tool calling test, dynamic context window |
 | **2.4.0** | 2026-02-22 | Crimson Pulse UI redesign (dark plum palette, matrix rain background, glow effects, markdown rendering in chat, cost dashboard page), launcher graceful exit fix |
 | **2.3.0** | 2026-02-22 | Panic full emergency stop (kills all processes + subprocess trees, closes app), Claude Code CLI auto-install with configurable model, cost dashboard (per-model/key/category breakdown), subprocess process-group management, Emergency Stop Invariant in BIBLE.md |

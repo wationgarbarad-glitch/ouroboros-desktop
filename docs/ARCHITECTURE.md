@@ -322,8 +322,15 @@ Settings file: `~/Ouroboros/data/settings.json`. File-locked for concurrent acce
 | CLAUDE_CODE_MODEL | sonnet | Anthropic model for Claude Code CLI (sonnet, opus, or full name) |
 | OUROBOROS_MAX_WORKERS | 5 | Worker process pool size |
 | TOTAL_BUDGET | 10.0 | Total budget in USD |
+| OUROBOROS_WEBSEARCH_MODEL | gpt-5.2 | OpenAI model for web_search tool |
 | OUROBOROS_SOFT_TIMEOUT_SEC | 600 | Soft timeout warning (10 min) |
 | OUROBOROS_HARD_TIMEOUT_SEC | 1800 | Hard timeout kill (30 min) |
+| LOCAL_MODEL_SOURCE | "" | HuggingFace repo for local model |
+| LOCAL_MODEL_FILENAME | "" | GGUF filename within repo |
+| LOCAL_MODEL_CONTEXT_LENGTH | 16384 | Context window for local model |
+| LOCAL_MODEL_N_GPU_LAYERS | 0 | GPU layers (-1=all, 0=CPU/mmap) |
+| USE_LOCAL_MAIN | false | Route main model to local server |
+| USE_LOCAL_LIGHT | false | Route light model to local server |
 
 ---
 
