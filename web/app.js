@@ -153,7 +153,10 @@ function initChat() {
     const input = document.getElementById('chat-input');
     const sendBtn = document.getElementById('chat-send');
 
+    const _chatHistory = [];
+
     function addMessage(text, role, markdown = false) {
+        _chatHistory.push({ text, role });
         const bubble = document.createElement('div');
         bubble.className = `chat-bubble ${role}`;
         const sender = role === 'user' ? 'You' : 'Ouroboros';
@@ -169,7 +172,14 @@ function initChat() {
             messagesDiv.appendChild(bubble);
         }
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        try { sessionStorage.setItem('ouro_chat', JSON.stringify(_chatHistory.slice(-200))); } catch {}
     }
+
+    // Restore chat from sessionStorage after page reload
+    try {
+        const saved = JSON.parse(sessionStorage.getItem('ouro_chat') || '[]');
+        for (const msg of saved) addMessage(msg.text, msg.role);
+    } catch {}
 
     function sendMessage() {
         const text = input.value.trim();
@@ -241,7 +251,9 @@ function initChat() {
         document.getElementById('chat-status').textContent = 'Reconnecting...';
     });
 
-    addMessage('Welcome! Type a message or use /commands (/status, /evolve, /review, /bg, /restart).', 'assistant');
+    if (_chatHistory.length === 0) {
+        addMessage('Welcome! Type a message or use /commands (/status, /evolve, /review, /bg, /restart).', 'assistant');
+    }
 }
 
 // ---------------------------------------------------------------------------
