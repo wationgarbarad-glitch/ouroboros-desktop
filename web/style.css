@@ -241,8 +241,8 @@ body {
 }
 
 .chat-bubble.assistant {
-    background: rgba(180, 30, 50, 0.18);
-    border-left: 2px solid rgba(220, 50, 60, 0.4);
+    background: rgba(139, 0, 0, 0.25);
+    border-left: 2px solid rgba(200, 20, 20, 0.6);
     align-self: flex-start;
     margin-right: 20%;
 }
@@ -253,7 +253,7 @@ body {
     margin-bottom: 4px;
 }
 .chat-bubble.user .sender { color: #93c5fd; }
-.chat-bubble.assistant .sender { color: #e85d6f; }
+.chat-bubble.assistant .sender { color: #dc2626; }
 
 .chat-bubble .message {
     font-size: 14px;
@@ -262,7 +262,7 @@ body {
     white-space: pre-wrap;
 }
 
-.chat-bubble.assistant .message { color: rgba(255, 255, 255, 0.7); }
+.chat-bubble.assistant .message { color: rgba(255, 220, 220, 0.85); }
 
 .chat-bubble .message pre {
     background: rgba(0, 0, 0, 0.3);
