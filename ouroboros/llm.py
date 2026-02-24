@@ -3,6 +3,9 @@ Ouroboros — LLM client.
 
 The only module that communicates with LLM APIs (OpenRouter + optional local).
 Contract: chat(), default_model(), available_models(), add_usage().
+
+[HEROBOROSBOT] Multi-provider router added. Free providers used first,
+OpenRouter as fallback. Set GOOGLE_AI_KEY and/or GROQ_API_KEY to activate.
 """
 
 from __future__ import annotations
@@ -15,6 +18,24 @@ from typing import Any, Dict, List, Optional, Tuple
 log = logging.getLogger(__name__)
 
 DEFAULT_LIGHT_MODEL = "google/gemini-3-flash-preview"
+
+# >>> HEROBOROSBOT: Multi-provider router >>>
+_router = None
+
+def _get_router():
+    global _router
+    if _router is None:
+        try:
+            from ouroboros.resource_router import ResourceRouter
+            _router = ResourceRouter()
+            log.info("[Router] Multi-provider router initialized")
+        except Exception as e:
+            log.warning(f"[Router] Failed to init: {e}. Using OpenRouter only.")
+    return _router
+
+def _should_use_router() -> bool:
+    return bool(os.environ.get("GOOGLE_AI_KEY") or os.environ.get("GROQ_API_KEY"))
+# <<< HEROBOROSBOT <<<
 
 
 def normalize_reasoning_effort(value: str, default: str = "medium") -> str:
@@ -189,11 +210,33 @@ class LLMClient:
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Single LLM call. Returns: (response_message_dict, usage_dict with cost).
 
-        When use_local=True, routes to the local llama-cpp-python server
-        and strips OpenRouter-specific parameters (reasoning, provider, cache_control).
+        [HEROBOROSBOT] Routes through multi-provider router when free keys are set.
+        Falls through to OpenRouter if router fails or is not configured.
         """
         if use_local:
             return self._chat_local(messages, tools, max_tokens, tool_choice)
+
+        # >>> HEROBOROSBOT: Route through free/cheap providers first >>>
+        if _should_use_router():
+            router = _get_router()
+            if router is not None:
+                try:
+                    msg, usage = router.chat(
+                        messages=messages,
+                        model=model,
+                        tools=tools,
+                        reasoning_effort=reasoning_effort,
+                        max_tokens=max_tokens,
+                        tool_choice=tool_choice,
+                    )
+                    content = msg.get("content") or ""
+                    tool_calls = msg.get("tool_calls") or []
+                    if content or tool_calls:
+                        return msg, usage
+                    log.warning("[Router] Empty response, falling through to OpenRouter")
+                except Exception as e:
+                    log.warning(f"[Router] Error: {e}, falling through to OpenRouter")
+        # <<< HEROBOROSBOT <<<
 
         return self._chat_openrouter(messages, model, tools, reasoning_effort, max_tokens, tool_choice)
 
